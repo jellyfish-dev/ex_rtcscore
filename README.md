@@ -1,23 +1,19 @@
-# Membrane Template Plugin
+# ExRTCScore
 
-[![Hex.pm](https://img.shields.io/hexpm/v/membrane_template_plugin.svg)](https://hex.pm/packages/membrane_template_plugin)
-[![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_template_plugin)
-[![CircleCI](https://circleci.com/gh/membraneframework/membrane_template_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_template_plugin)
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_rtcscore.svg)](https://hex.pm/packages/ex_rtcscore)
+[![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/ex_rtcscore)
+[![CircleCI](https://circleci.com/gh/jellyfish-dev/ex_rtcscore.svg?style=svg)](https://circleci.com/gh/jellyfish-dev/ex_rtcscore)
 
-This repository contains a template for new plugins.
-
-Check out different branches for other flavors of this template.
-
-It's a part of the [Membrane Framework](https://membrane.stream).
+TODO WRITEME
 
 ## Installation
 
-The package can be installed by adding `membrane_template_plugin` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `ex_rtcscore` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:membrane_template_plugin, "~> 0.1.0"}
+    {:ex_rtcscore, "~> 0.1.0"}
   ]
 end
 ```
@@ -28,7 +24,7 @@ TODO
 
 ## Copyright and License
 
-Copyright 2020, [Software Mansion](https://swmansion.com/?utm_source=git&utm_medium=readme&utm_campaign=membrane_template_plugin)
+Copyright 2024, [Software Mansion](https://swmansion.com/?utm_source=git&utm_medium=readme&utm_campaign=membrane_template_plugin)
 
 [![Software Mansion](https://logo.swmansion.com/logo?color=white&variant=desktop&width=200&tag=membrane-github)](https://swmansion.com/?utm_source=git&utm_medium=readme&utm_campaign=membrane_template_plugin)
 
