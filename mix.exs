@@ -74,7 +74,15 @@ defmodule ExRTCScore.MixProject do
       main: "readme",
       extras: ["README.md", "LICENSE"],
       formatters: ["html"],
-      source_ref: "v#{@version}"
+      source_ref: "v#{@version}",
+      nest_modules_by_prefix: [ExRTCScore.WebRTCInternals],
+      groups_for_modules: [
+        "WebRTC Internals": [
+          ExRTCScore.WebRTCInternals,
+          ExRTCScore.WebRTCInternals.TrackReport,
+          ExRTCScore.WebRTCInternals.TrackReport.Score
+        ]
+      ]
     ]
   end
 end

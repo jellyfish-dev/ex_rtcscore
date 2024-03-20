@@ -4,7 +4,8 @@
 [![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/ex_rtcscore)
 [![CircleCI](https://circleci.com/gh/jellyfish-dev/ex_rtcscore.svg?style=svg)](https://circleci.com/gh/jellyfish-dev/ex_rtcscore)
 
-TODO WRITEME
+Elixir implementation of [rtcscore](https://github.com/ggarber/rtcscore),
+with small tweaks from [rtcscore-go](https://github.com/livekit/rtcscore-go) included.
 
 ## Installation
 
@@ -17,10 +18,6 @@ def deps do
   ]
 end
 ```
-
-## Usage
-
-TODO
 
 ## Copyright and License
 

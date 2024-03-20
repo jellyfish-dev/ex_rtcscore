@@ -3,8 +3,8 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
 
   require Logger
 
-  alias ExRTCScore.{Config, Stat}
-  alias ExRTCScore.WebRTCInternals.{Report, TrackReport}
+  alias ExRTCScore.{Config, Stat, WebRTCInternals}
+  alias ExRTCScore.WebRTCInternals.TrackReport
 
   @video_specific_stats [
     "[codec]",
@@ -23,7 +23,7 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
                 ] ++ @video_specific_stats
 
   @doc false
-  @spec parse(term()) :: Report.t()
+  @spec parse(term()) :: WebRTCInternals.t()
   def parse(data) do
     Enum.reduce(data["PeerConnections"], %{}, fn {peer_id, peer_data}, acc ->
       rtt_by_transport = parse_rtt(peer_data["stats"])
@@ -65,7 +65,7 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
         end
       end)
     end)
-    |> then(&%Report{peer_scores: &1})
+    |> then(&%WebRTCInternals{peer_scores: &1})
   end
 
   defp parse_rtt(peer_entries) do
@@ -115,8 +115,6 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
 
   defp statify(entries, track_config, rtt_values) do
     packet_loss_values = calculate_packet_loss(entries)
-
-    # maybe min_max and issue a warning if max - min > some_val?
     stat_count = Enum.min(for {_k, v} <- entries, do: length(v["values"]))
 
     %Stat{track_config: track_config}

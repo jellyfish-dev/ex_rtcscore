@@ -1,25 +1,15 @@
 defmodule ExRTCScore.Config.Video do
   @moduledoc """
-  TODO rewriteme
   Struct describing the video parameters:
   * `:codec` - codec used
-  * `:width` - width of the received video (default: `640`)
-  * `:height` - height of the received video (default: `480`)
-  * `:framerate` - framerate of the received video (default: `30.0`)
-  * `:expected_framerate` - framerate of the video source (default: `nil`).
-    If set to `nil`, will be inferred from `framerate`
+  * `:width` - width of the received video
+  * `:height` - height of the received video
+  * `:framerate` - framerate of the received video
+  * `:expected_framerate` - framerate of the video source.
+    During scoring, if set to `nil`, will be inferred from `framerate`.
   """
 
   use Bunch.Access
-  alias ExRTCScore.Utils
-
-  @defaults %{
-    codec: nil,
-    width: 640,
-    height: 480,
-    framerate: 30.0,
-    expected_framerate: nil
-  }
 
   @type t :: %__MODULE__{
           codec: :h264 | :vp8 | :vp9 | :av1 | nil,
@@ -50,12 +40,9 @@ defmodule ExRTCScore.Config.Video do
   def codec_factor(%__MODULE__{codec: :av1}), do: 1.43
 
   @doc false
-  @spec normalise(t()) :: t()
-  def normalise(%__MODULE__{} = config) do
-    config = Utils.put_defaults_if_nil(config, @defaults)
-
-    config
-    |> Map.update!(:expected_framerate, fn
+  @spec fill_defaults(t()) :: t()
+  def fill_defaults(%__MODULE__{} = config) do
+    Map.update!(config, :expected_framerate, fn
       nil -> config.framerate
       framerate -> framerate
     end)

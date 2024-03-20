@@ -1,24 +1,16 @@
 defmodule ExRTCScore.Stat do
   @moduledoc """
-  TODO rewriteme
   Struct describing the input parameters necessary to calculate the score:
+  * `:track_config` - Struct with the video/audio track parameters
   * `:packet_loss` - Packet loss in percent (0-100)
   * `:bitrate` - Bitrate in bits per second
-  * `:track_config` - Struct with the video/audio track parameters
-  * `:round_trip_time` - Round trip time in milliseconds (default: `50`)
-  * `:buffer_delay` - Buffer delay in milliseconds (default: `50`)
+  * `:round_trip_time` - Round trip time in milliseconds
+  * `:buffer_delay` - Buffer delay in milliseconds
   """
 
   use Bunch.Access
 
-  alias ExRTCScore.{Config, Utils}
-
-  @defaults %{
-    packet_loss: nil,
-    bitrate: nil,
-    round_trip_time: 50,
-    buffer_delay: 50
-  }
+  alias ExRTCScore.Config
 
   @type t :: %__MODULE__{
           track_config: Config.Video.t() | Config.Audio.t(),
@@ -41,12 +33,10 @@ defmodule ExRTCScore.Stat do
               ]
 
   @doc false
-  @spec normalise(t()) :: t()
-  def normalise(%__MODULE__{} = stat) do
+  @spec fill_defaults(t()) :: t()
+  def fill_defaults(%__MODULE__{} = stat) do
     %config_module{} = stat.track_config
 
-    stat
-    |> Utils.put_defaults_if_nil(@defaults)
-    |> Map.update!(:track_config, &config_module.normalise/1)
+    Map.update!(stat, :track_config, &config_module.fill_defaults/1)
   end
 end

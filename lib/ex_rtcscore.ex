@@ -13,7 +13,7 @@ defmodule ExRTCScore do
   @spec score(Stat.t()) :: float()
   def score(stat) do
     stat
-    |> Stat.normalise()
+    |> Stat.fill_defaults()
     |> calculate_score()
   end
 
@@ -31,8 +31,10 @@ defmodule ExRTCScore do
 
       base = clamp(0.56 * :math.log(bits_per_pixel_per_frame) + 5.36, 1.0, 5.0)
 
-      # Consider clamping the thing in :math.log() with 1.0
-      (base - 1.9 * :math.log(config.expected_framerate / config.framerate) - 0.002 * delay)
+      framerate_factor =
+        (config.expected_framerate / config.framerate) |> clamp(1.0, :infinity) |> :math.log()
+
+      (base - 1.9 * framerate_factor - 0.002 * delay)
       |> clamp(1.0, 5.0)
       |> Float.round(2)
     else
@@ -40,7 +42,7 @@ defmodule ExRTCScore do
     end
   end
 
-  # Audio score -- MOS calculation based on E-Model algorithm
+  # Audio score -- MOS calculation based on ITU-T E-Model algorithm
   defp calculate_score(%{track_config: %Config.Audio{} = config} = stat) do
     # Assume packetisation delay of 20 ms
     delay = 20 + stat.buffer_delay + stat.round_trip_time / 2

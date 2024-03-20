@@ -1,18 +1,16 @@
 defmodule ExRTCScore.Config.Audio do
   @moduledoc """
-  TODO rewriteme
   Struct describing the audio parameters:
-  * `:fec` - Whether OPUS forward error correction is enabled (default: `true`)
-  * `:dtx` - Whether OPUS discontinuous transmission is enabled (default: `false`)
-  * `:red` - Whether redundant encoding is enabled (default: `false`)
+  * `:fec` - Whether OPUS forward error correction is enabled
+  * `:dtx` - Whether OPUS discontinuous transmission is enabled
+  * `:red` - Whether redundant encoding is enabled.
+    During scoring, if set to `nil`, defaults to `false`.
   """
 
   use Bunch.Access
   alias ExRTCScore.Utils
 
   @defaults %{
-    fec: true,
-    dtx: false,
     red: false
   }
 
@@ -32,8 +30,8 @@ defmodule ExRTCScore.Config.Audio do
               ]
 
   @doc false
-  @spec normalise(t()) :: t()
-  def normalise(%__MODULE__{} = config) do
+  @spec fill_defaults(t()) :: t()
+  def fill_defaults(%__MODULE__{} = config) do
     Utils.put_defaults_if_nil(config, @defaults)
   end
 end
