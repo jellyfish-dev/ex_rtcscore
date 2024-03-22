@@ -1,25 +1,26 @@
-defmodule Membrane.Template.Mixfile do
+defmodule ExRTCScore.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @github_url "https://github.com/membraneframework/membrane_template_plugin"
+  @github_url "https://github.com/jellyfish-dev/ex_rtcscore"
 
   def project do
     [
-      app: :membrane_template_plugin,
+      app: :ex_rtcscore,
       version: @version,
-      elixir: "~> 1.13",
+      elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       dialyzer: dialyzer(),
 
       # hex
-      description: "Template Plugin for Membrane Framework",
+      description:
+        "Calculate a Mean Opinion Score (MOS) from 1 to 5 for audio and video real time communications.",
       package: package(),
 
       # docs
-      name: "Membrane Template plugin",
+      name: "ExRTCScore",
       source_url: @github_url,
       docs: docs()
     ]
@@ -27,7 +28,7 @@ defmodule Membrane.Template.Mixfile do
 
   def application do
     [
-      extra_applications: []
+      extra_applications: [:logger]
     ]
   end
 
@@ -36,7 +37,8 @@ defmodule Membrane.Template.Mixfile do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.0"},
+      {:bunch, "~> 1.6"},
+      {:jason, "~> 1.4"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, ">= 0.0.0", only: :dev, runtime: false},
       {:credo, ">= 0.0.0", only: :dev, runtime: false}
@@ -73,7 +75,14 @@ defmodule Membrane.Template.Mixfile do
       extras: ["README.md", "LICENSE"],
       formatters: ["html"],
       source_ref: "v#{@version}",
-      nest_modules_by_prefix: [Membrane.Template]
+      nest_modules_by_prefix: [ExRTCScore.WebRTCInternals],
+      groups_for_modules: [
+        "WebRTC Internals": [
+          ExRTCScore.WebRTCInternals,
+          ExRTCScore.WebRTCInternals.TrackReport,
+          ExRTCScore.WebRTCInternals.TrackReport.Score
+        ]
+      ]
     ]
   end
 end
