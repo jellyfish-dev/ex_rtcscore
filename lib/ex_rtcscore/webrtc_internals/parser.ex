@@ -44,7 +44,8 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
              {:ok, start_time} <- parse_time(start_time),
              {:ok, end_time} <- parse_time(end_time),
              kind <- parse_kind(track_kind),
-             {:ok, track_entries, track_config} <- get_entries_and_config(track_entries, kind, ctx) do
+             {:ok, track_entries, track_config} <-
+               get_entries_and_config(track_entries, kind, ctx) do
           acc
           |> Map.put_new(peer_id, %{video: nil, audio: nil})
           |> put_in(
@@ -98,7 +99,7 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
           |> then(&(acc ++ &1))
         end)
         # to milliseconds
-        |> Enum.map(& &1 * 1000)
+        |> Enum.map(&(&1 * 1000))
 
       {transport_id, rtt_values}
     end)
@@ -112,32 +113,38 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
   end
 
   defp parse_tracks_info(peer_entries) do
-    Enum.reduce(peer_entries, %{inbound_rtp_tracks: MapSet.new(), codec_by_id: %{}}, fn {entry_key, entry}, acc ->
-      with {track_id, stat_name} <- parse_entry_key(entry_key) do
-        cond do
-          stat_type_equals?(entry, stat_name, "inbound-rtp") ->
-            %{acc | inbound_rtp_tracks: MapSet.put(acc.inbound_rtp_tracks, track_id)}
+    Enum.reduce(
+      peer_entries,
+      %{inbound_rtp_tracks: MapSet.new(), codec_by_id: %{}},
+      fn {entry_key, entry}, acc ->
+        with {track_id, stat_name} <- parse_entry_key(entry_key) do
+          cond do
+            stat_type_equals?(entry, stat_name, "inbound-rtp") ->
+              %{acc | inbound_rtp_tracks: MapSet.put(acc.inbound_rtp_tracks, track_id)}
 
-          stat_type_equals?(entry, stat_name, "codec") ->
-            [mimetype | _rest] =
-              peer_entries[track_id <> "-" <> "mimeType"]["values"]
-              |> Jason.decode!()
+            stat_type_equals?(entry, stat_name, "codec") ->
+              [mimetype | _rest] =
+                peer_entries[track_id <> "-" <> "mimeType"]["values"]
+                |> Jason.decode!()
 
-            codec = mimetype |> String.downcase() |> parse_mimetype()
+              codec = mimetype |> String.downcase() |> parse_mimetype()
 
-            %{acc | codec_by_id: Map.put(acc.codec_by_id, track_id, codec)}
+              %{acc | codec_by_id: Map.put(acc.codec_by_id, track_id, codec)}
 
-          true ->
-            acc
+            true ->
+              acc
+          end
+        else
+          _any -> acc
         end
-      else
-        _any -> acc
       end
-    end)
+    )
   end
 
   defp stat_type_equals?(entry, stat_name, expected_type) do
-    (stat_name == "type" and entry["values"] |> Jason.decode!() |> Enum.all?(& &1 == expected_type)) or entry["statsType"] == expected_type
+    (stat_name == "type" and
+       entry["values"] |> Jason.decode!() |> Enum.all?(&(&1 == expected_type))) or
+      entry["statsType"] == expected_type
   end
 
   # Take only selected stats from `inbound-rtp` tracks
@@ -164,7 +171,12 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
     |> update_stats(:packet_loss, calculate_packet_loss(entries))
     |> update_stats(:buffer_delay, calculate_buffer_delay(entries, ctx))
     |> update_stats(:round_trip_time, rtt_values)
-    |> then(&if(match?(%Config.Video{}, track_config), do: update_stats(&1, :framerate, calculate_framerate(entries, ctx)), else: &1))
+    |> then(
+      &if(match?(%Config.Video{}, track_config),
+        do: update_stats(&1, :framerate, calculate_framerate(entries, ctx)),
+        else: &1
+      )
+    )
     |> then(
       &Enum.reduce(entries, &1, fn {stat_name, entry}, stats ->
         update_stats(stats, stat_name, entry["values"])
@@ -172,8 +184,11 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
     )
   end
 
-  defp calculate_bitrate(entries, ctx), do: calculate_simple_deltas(entries, "bytesReceived", ctx, & &1 * 8)
-  defp calculate_framerate(entries, ctx), do: calculate_simple_deltas(entries, "framesDecoded", ctx)
+  defp calculate_bitrate(entries, ctx),
+    do: calculate_simple_deltas(entries, "bytesReceived", ctx, &(&1 * 8))
+
+  defp calculate_framerate(entries, ctx),
+    do: calculate_simple_deltas(entries, "framesDecoded", ctx)
 
   defp calculate_packet_loss(entries) do
     {packet_loss_values, _acc} =
@@ -195,11 +210,18 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
 
   defp calculate_buffer_delay(entries, ctx) do
     {buffer_delay_values, _acc} =
-      Enum.zip(entries["jitterBufferDelay"]["values"], entries["jitterBufferEmittedCount"]["values"])
+      Enum.zip(
+        entries["jitterBufferDelay"]["values"],
+        entries["jitterBufferEmittedCount"]["values"]
+      )
       |> Enum.map_reduce({0, 0}, fn {delay, count}, {previous_delay, previous_count} ->
         delay_delta = delay - previous_delay
         count_delta = count - previous_count
-        buffer_delay = if count_delta > 0, do: delay_delta * 1000 / count_delta / ctx.entries_per_second, else: 0
+
+        buffer_delay =
+          if count_delta > 0,
+            do: delay_delta * 1000 / count_delta / ctx.entries_per_second,
+            else: 0
 
         {buffer_delay, {delay, count}}
       end)
@@ -224,9 +246,13 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
     |> Enum.map(&update_stat(&1, stat_name))
   end
 
-  defp update_stat({stat, value}, "frameHeight"), do: put_in(stat, [:track_config, :height], value)
+  defp update_stat({stat, value}, "frameHeight"),
+    do: put_in(stat, [:track_config, :height], value)
+
   defp update_stat({stat, value}, "frameWidth"), do: put_in(stat, [:track_config, :width], value)
-  defp update_stat({stat, value}, :framerate), do: put_in(stat, [:track_config, :framerate], value)
+
+  defp update_stat({stat, value}, :framerate),
+    do: put_in(stat, [:track_config, :framerate], value)
 
   defp update_stat({stat, value}, :bitrate), do: %{stat | bitrate: value}
   defp update_stat({stat, value}, :packet_loss), do: %{stat | packet_loss: value}
@@ -266,6 +292,7 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
   defp parse_kind(other), do: raise("Unknown kind of track: #{inspect(other)}")
 
   defp parse_time(time) when is_number(time), do: DateTime.from_unix(round(time), :millisecond)
+
   defp parse_time(time) do
     with {:ok, datetime, _offset} <- DateTime.from_iso8601(time), do: {:ok, datetime}
   end
@@ -275,5 +302,5 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
   defp parse_mimetype("video/vp8"), do: :vp8
   defp parse_mimetype("video/vp9"), do: :vp9
   defp parse_mimetype("video/av1"), do: :av1
-  defp parse_mimetype(other), do: raise "Unknown mimetype: #{inspect(other)}"
+  defp parse_mimetype(other), do: raise("Unknown mimetype: #{inspect(other)}")
 end
