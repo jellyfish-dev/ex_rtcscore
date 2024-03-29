@@ -72,7 +72,12 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
     |> then(&%WebRTCInternals{peer_scores: &1})
   end
 
+  # Get the mapping `transportId => [currentRoundTripTime]`.
+  #
+  # RTT is measured for candidate pairs, so we need to associate transports
+  # with the corresponding measurements at the right moments in time
   defp parse_rtt(peer_entries) do
+    # %{transportId => [selectedCandidatePairId]}
     Enum.reduce(peer_entries, %{}, fn {entry_key, entry}, acc ->
       with {transport_id, stat_name} <- parse_entry_key(entry_key),
            true <- stat_type_equals?(entry, stat_name, "transport") do
@@ -83,14 +88,16 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
         _any -> acc
       end
     end)
-    |> Map.new(fn {transport_id, current_candidate_pair_id} ->
+    |> Map.new(fn {transport_id, selected_candidate_pair_id} ->
+      # How many values correspond to each candidate pair ID
       rtt_value_counts =
-        current_candidate_pair_id
+        selected_candidate_pair_id
         |> Enum.group_by(& &1)
         |> Map.new(fn {k, v} -> {k, length(v)} end)
 
+      # Concatenate the correct numbers of values from corresponding candidate pairs
       rtt_values =
-        current_candidate_pair_id
+        selected_candidate_pair_id
         |> Enum.uniq()
         |> Enum.reduce([], fn candidate_pair_id, acc ->
           peer_entries[candidate_pair_id <> "-" <> "currentRoundTripTime"]["values"]
@@ -106,12 +113,15 @@ defmodule ExRTCScore.WebRTCInternals.Parser do
   end
 
   defp parse_entry_key(entry_key) do
-    [track_id, stat_name] =
-      Regex.run(~r/^(.+)-([^-]+)$/, entry_key, capture: :all_but_first)
+    # Split the key into 2 parts at `-`, but do it from the end
+    # (track_id may also contain `-`s)
+    [track_id, stat_name] = Regex.run(~r/^(.+)-([^-]+)$/, entry_key, capture: :all_but_first)
 
     {track_id, stat_name}
   end
 
+  # Get a `MapSet` of inbound RTP track IDs
+  # as well as the mapping `codecId => codec_atom`
   defp parse_tracks_info(peer_entries) do
     Enum.reduce(
       peer_entries,
