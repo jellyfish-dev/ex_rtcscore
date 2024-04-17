@@ -18,6 +18,7 @@ defmodule Utils do
       Enum.map(track_report.stats, fn stat ->
         Map.get(stat, metric)
       end)
+      |> Enum.sort()
 
     Enum.at(entries, length(entries) |> div(2))
   end
