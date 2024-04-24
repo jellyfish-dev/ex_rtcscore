@@ -5,6 +5,8 @@ defmodule WebRTCInternalsTest do
 
   @fixtures_dir "test/fixtures"
 
+  @sender_rtt 68
+
   test "correctly parse and score sample webrtc internals dump" do
     report = get_report("sample-webrtc-internals-dump.txt")
 
@@ -37,6 +39,18 @@ defmodule WebRTCInternalsTest do
     end
   end
 
+  test "correctly calculate end-to-end latency for a single track" do
+    report = get_report("sample-webrtc-internals-dump.txt")
+
+    [peer_id] = report.peer_scores |> Map.keys()
+
+    track_report =
+      report.peer_scores[peer_id].video
+      |> WebRTCInternals.TrackReport.calculate_latency(@sender_rtt)
+
+    assert_peer_score(:video, track_report, check: :latency)
+  end
+
   defp get_report(filename) do
     @fixtures_dir
     |> Path.join(filename)
@@ -58,13 +72,18 @@ defmodule WebRTCInternalsTest do
       end
     end
 
-    refute is_nil(report.score)
-    assert length(report.score.values) == length(report.stats)
-    assert report.score.mean >= opts[:score_mean_lo]
-    assert report.score.mean <= opts[:score_mean_hi]
+    {field, score_fun} =
+      if opts[:check] == :latency,
+        do: {report.latency, &ExRTCScore.e2e_latency(&1, @sender_rtt)},
+        else: {report.score, &ExRTCScore.score/1}
 
-    for {stat, score} <- Enum.zip(report.stats, report.score.values) do
-      assert ExRTCScore.score(stat) == score
+    refute is_nil(field)
+    assert length(field.values) == length(report.stats)
+    assert is_nil(opts[:score_mean_lo]) or field.mean >= opts[:score_mean_lo]
+    assert is_nil(opts[:score_mean_hi]) or field.mean <= opts[:score_mean_hi]
+
+    for {stat, score} <- Enum.zip(report.stats, field.values) do
+      assert score_fun.(stat) == score
     end
   end
 end

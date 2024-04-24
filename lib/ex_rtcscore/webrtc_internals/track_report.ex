@@ -8,9 +8,10 @@ defmodule ExRTCScore.WebRTCInternals.TrackReport do
   * `:end_time` - Timestamp of the last stat entry
   * `:stats` - List with time range of entries
   * `:score` - Calculated score (default: `nil`)
+  * `:latency` - Calculated end-to-end latency estimate (default: `nil`)
   """
 
-  alias ExRTCScore.Stat
+  alias ExRTCScore.{Config, Stat, Utils}
 
   defmodule Score do
     @moduledoc """
@@ -56,7 +57,8 @@ defmodule ExRTCScore.WebRTCInternals.TrackReport do
           start_time: DateTime.t(),
           end_time: DateTime.t(),
           stats: [Stat.t()],
-          score: Score.t() | nil
+          score: Score.t() | nil,
+          latency: Score.t() | nil
         }
 
   @enforce_keys [
@@ -68,5 +70,44 @@ defmodule ExRTCScore.WebRTCInternals.TrackReport do
     :stats
   ]
 
-  defstruct @enforce_keys ++ [score: nil]
+  defstruct @enforce_keys ++ [score: nil, latency: nil]
+
+  @doc """
+  Score a previously generated track report.
+  * `track_report` - `#{inspect(__MODULE__)}` struct
+  * `defaults` - If a `ExRTCScore.Stat`'s `:track_config` has a field set to `nil`,
+    a default value specified here will be used instead.
+
+  Caution: **does not** fill the following fields in `:track_config`:
+  * video tracks - `:expected_framerate`
+  * audio tracks - `:red`
+
+  """
+  @spec score(t(), Config.Video.t() | Config.Audio.t()) :: t()
+  def score(track_report, defaults) do
+    track_report.stats
+    |> Enum.map(fn stat ->
+      stat
+      |> Map.update!(:track_config, &Utils.put_defaults_if_nil(&1, defaults))
+      |> ExRTCScore.score()
+    end)
+    |> Score.new()
+    |> then(&%{track_report | score: &1})
+  end
+
+  @doc """
+  Calculate the end-to-end latency estimates and insert them into the previously generated track report.
+  * `track_report` - `#{inspect(__MODULE__)}` struct
+  * `sender_round_trip_time` - Round trip time (in milliseconds) from the sending side.
+    At the moment, only one value may be provided here, which will be used for all stat entries.
+
+  To calculate a single value, use `ExRTCScore.e2e_latency/2`.
+  """
+  @spec calculate_latency(t(), number()) :: t()
+  def calculate_latency(track_report, sender_round_trip_time) do
+    track_report.stats
+    |> Enum.map(&ExRTCScore.e2e_latency(&1, sender_round_trip_time))
+    |> Score.new()
+    |> then(&%{track_report | latency: &1})
+  end
 end
