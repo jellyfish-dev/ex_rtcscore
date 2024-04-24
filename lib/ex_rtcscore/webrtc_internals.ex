@@ -3,7 +3,7 @@ defmodule ExRTCScore.WebRTCInternals do
   Utilities for working with WebRTC Internals JSON dumps.
   """
 
-  alias ExRTCScore.{Config, Utils}
+  alias ExRTCScore.Config
   alias ExRTCScore.WebRTCInternals.{Parser, TrackReport}
 
   @type peer_score :: %{video: TrackReport.t() | nil, audio: TrackReport.t() | nil}
@@ -72,20 +72,9 @@ defmodule ExRTCScore.WebRTCInternals do
       {peer_id,
        Map.new(peer_score, fn
          {kind, nil} -> {kind, nil}
-         {kind, track_report} -> {kind, score_track_report(track_report, score_ctx)}
+         {kind, track_report} -> {kind, TrackReport.score(track_report, score_ctx[kind])}
        end)}
     end)
     |> then(&%{report | peer_scores: &1})
-  end
-
-  defp score_track_report(report, score_ctx) do
-    report.stats
-    |> Enum.map(fn stat ->
-      stat
-      |> Map.update!(:track_config, &Utils.put_defaults_if_nil(&1, score_ctx[report.kind]))
-      |> ExRTCScore.score()
-    end)
-    |> TrackReport.Score.new()
-    |> then(&Map.put(report, :score, &1))
   end
 end

@@ -3,6 +3,8 @@ defmodule ExRTCScoreTest do
 
   alias ExRTCScore.{Config, Stat}
 
+  @eps 1.0e-12
+
   @default_video_stat %Stat{
     bitrate: 200_000,
     packet_loss: 0,
@@ -148,6 +150,20 @@ defmodule ExRTCScoreTest do
     end
   end
 
+  describe "end-to-end latency estimate" do
+    test "is calculated correctly from a single sender RTT value" do
+      {sender_rtt, receiver_rtt, buffer_delay} = {40, 50, 10}
+
+      assert_in_delta calculate_e2e_latency(
+                        %{round_trip_time: receiver_rtt, buffer_delay: buffer_delay},
+                        %{},
+                        sender_rtt
+                      ),
+                      sender_rtt / 2 + receiver_rtt / 2 + buffer_delay,
+                      @eps
+    end
+  end
+
   defp assert_video_score_between(stat, track_config, lower, upper) do
     score = score_video_stat(stat, track_config)
     assert score >= lower and score <= upper
@@ -162,9 +178,16 @@ defmodule ExRTCScoreTest do
   defp score_audio_stat(stat, track_config), do: score_stat(:audio, stat, track_config)
 
   defp score_stat(kind, stat, track_config) do
+    prepare_stat(kind, stat, track_config) |> ExRTCScore.score()
+  end
+
+  defp calculate_e2e_latency(stat, track_config, sender_rtt) do
+    prepare_stat(:video, stat, track_config) |> ExRTCScore.e2e_latency(sender_rtt)
+  end
+
+  defp prepare_stat(kind, stat, track_config) do
     if(kind == :video, do: @default_video_stat, else: @default_audio_stat)
     |> Map.update!(:track_config, &Map.merge(&1, track_config))
     |> Map.merge(stat)
-    |> ExRTCScore.score()
   end
 end

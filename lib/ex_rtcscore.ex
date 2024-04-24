@@ -17,6 +17,16 @@ defmodule ExRTCScore do
     |> calculate_score()
   end
 
+  @doc """
+  Calculate the end-to-end latency estimate (in milliseconds) from the provided parameters.
+  * `stat` - `ExRTCScore.Stat` from the receiving side
+  * `sender_round_trip_time` - Round trip time (in milliseconds) from the sending side
+  """
+  @spec e2e_latency(Stat.t(), number()) :: float()
+  def e2e_latency(stat, sender_round_trip_time) do
+    sender_round_trip_time / 2 + stat.round_trip_time / 2 + stat.buffer_delay
+  end
+
   # Video score -- MOS calculation based on logarithmic regression
   defp calculate_score(%{track_config: %Config.Video{} = config} = stat) do
     codec_factor = Config.Video.codec_factor(config)
